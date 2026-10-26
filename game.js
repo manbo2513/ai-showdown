@@ -159,6 +159,9 @@ const dom = {
   protocolModal: $("#protocolModal"),
   protocolGrid: $("#protocolGrid"),
   protocolBtn: $("#protocolBtn"),
+  orientationHint: $("#orientationHint"),
+  landscapeLockBtn: $("#landscapeLockBtn"),
+  orientationStatus: $("#orientationStatus"),
   helpSelectBtn: $("#helpSelectBtn"),
   protocolSelectBtn: $("#protocolSelectBtn"),
   closeProtocolBtn: $("#closeProtocolBtn"),
@@ -216,6 +219,25 @@ function scheduleMobileViewportUpdate() {
   requestAnimationFrame(updateMobileViewportState);
   setTimeout(updateMobileViewportState, 120);
   setTimeout(updateMobileViewportState, 420);
+  setTimeout(updateMobileViewportState, 1000);
+}
+
+async function requestLandscapeMode() {
+  if (!dom.orientationStatus) return;
+  dom.orientationStatus.textContent = "正在请求全屏横屏模式…";
+  try {
+    if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+      await document.documentElement.requestFullscreen({ navigationUI: "hide" });
+    }
+    if (screen.orientation?.lock) {
+      await screen.orientation.lock("landscape");
+    }
+    dom.orientationStatus.textContent = "已请求横屏模式，正在调整页面…";
+    scheduleMobileViewportUpdate();
+  } catch {
+    dom.orientationStatus.textContent =
+      "当前浏览器未允许方向锁定，请改用系统 Chrome/Safari 打开，并确认系统自动旋转已开启。";
+  }
 }
 
 class SoundEngine {
@@ -3809,6 +3831,8 @@ dom.soundBtn.addEventListener("click", () => {
   if (sound.enabled) sound.play("pick");
 });
 
+dom.landscapeLockBtn?.addEventListener("click", requestLandscapeMode);
+
 dom.hand.addEventListener("click", (event) => {
   const cardNode = event.target.closest("[data-uid]");
   if (!cardNode || state?.phase !== "plan" || state?.lock) return;
@@ -4004,6 +4028,11 @@ window.addEventListener("keydown", (event) => {
 
 window.addEventListener("resize", scheduleMobileViewportUpdate, { passive: true });
 window.addEventListener("orientationchange", scheduleMobileViewportUpdate);
+window.addEventListener("pageshow", scheduleMobileViewportUpdate);
+window.addEventListener("fullscreenchange", scheduleMobileViewportUpdate);
+window.visualViewport?.addEventListener("resize", scheduleMobileViewportUpdate, {
+  passive: true,
+});
 window.screen?.orientation?.addEventListener?.("change", scheduleMobileViewportUpdate);
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) scheduleMobileViewportUpdate();
