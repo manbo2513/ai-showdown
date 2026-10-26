@@ -185,6 +185,7 @@
           <div class="title-tools">
             <button id="helpSelectBtn" class="protocol-link" type="button">玩法说明</button>
             <button id="protocolSelectBtn" class="protocol-link" type="button">协议图鉴</button>
+            <button id="tutorialSelectBtn" class="protocol-link tutorial-link" type="button">新手引导</button>
           </div>
         </header>
 
@@ -256,6 +257,32 @@
       </div>
     </div>
 
+    <div id="tutorialModal" class="modal-layer tutorial-layer hidden">
+      <section class="tutorial-card" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle">
+        <button id="closeTutorialBtn" class="modal-close" type="button" aria-label="关闭新手引导">×</button>
+        <div class="tutorial-layout">
+          <div id="tutorialVisual" class="tutorial-visual" aria-hidden="true"></div>
+          <div class="tutorial-copy">
+            <div class="eyebrow" id="tutorialEyebrow">QUICK START</div>
+            <div class="tutorial-progress">
+              <span id="tutorialProgress"></span>
+              <b id="tutorialStepNumber">1 / 4</b>
+            </div>
+            <h2 id="tutorialTitle">选择你的模型娘</h2>
+            <p id="tutorialBody"></p>
+            <div id="tutorialTips" class="tutorial-tips"></div>
+            <div class="tutorial-actions">
+              <button id="tutorialSkipBtn" class="round-button" type="button">跳过引导</button>
+              <div>
+                <button id="tutorialPrevBtn" class="round-button" type="button">上一步</button>
+                <button id="tutorialNextBtn" class="primary-button" type="button">下一步</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
     <div id="protocolModal" class="modal-layer hidden">
       <div class="modal-card protocol-card">
         <button id="closeProtocolBtn" class="modal-close" type="button" aria-label="关闭">×</button>
@@ -292,8 +319,6 @@
             <article><b>固有</b><p>战斗开始时置于抽牌堆顶，必定进入首回合起手。</p></article>
             <article><b>反噬</b><p>带有反噬的牌若在回合结束时仍在手牌中，会按数值损失稳定度。</p></article>
             <article><b>滑溜</b><p>布阵阶段从抽牌堆抽到时，自动进入最左侧空槽并立即结算；没有空槽时留在手牌中。</p></article>
-            <article><b>多段攻击</b><p>先计算单段最终攻击，再乘以攻击次数，最后只扣除一次对位抵挡。</p></article>
-            <article><b>同调</b><p>相邻卡牌共享任意一种协议即可连携；每有一条有效连接，当前牌数值提高。</p></article>
           </div>
         </section>
         <div class="button-note"><kbd>Space</kbd> / <kbd>Enter</kbd> 确认布阵　·　<kbd>1</kbd>–<kbd>5</kbd> 快速放入对应槽位</div>

@@ -53,13 +53,13 @@ const AI_SCORE = {
 };
 
 const TAGS = {
+  基础: { tone: "base", name: "基础", fullName: "基础协议", glyph: "◇", primary: "主桥接", primaryShort: "桥接", use: "所有基础牌共享；只参与同调，不计入混合专家路由" },
   计算: { tone: "sun", name: "计算", fullName: "计算协议", glyph: "⚙", primary: "主攻击", primaryShort: "攻击", use: "推理、计算与直接输出" },
   安全: { tone: "mint", name: "安全", fullName: "安全协议", glyph: "⛨", primary: "主防御", primaryShort: "防御", use: "防御、减伤与安全护栏" },
   对话: { tone: "teal", name: "对话", fullName: "对话协议", glyph: "≋", primary: "主抽牌 / 治疗", primaryShort: "抽牌 · 治疗", use: "抽牌、治疗与长链续航" },
-  视觉: { tone: "orange", name: "视觉", fullName: "视觉协议", glyph: "▧", primary: "主复合", primaryShort: "复合", use: "图像解析与攻防兼备的复合效果" },
+  视觉: { tone: "orange", name: "视觉", fullName: "视觉协议", glyph: "▧", primary: "主临时效果", primaryShort: "临时效果", use: "提供本回合限定的特殊效果，并可附带一定攻防能力" },
   代码: { tone: "violet", name: "代码", fullName: "代码协议", glyph: "⌘", primary: "主能力", primaryShort: "能力", use: "打出后成为永久 Buff，不进入弃牌循环" },
   噪声: { tone: "red", name: "噪声", fullName: "噪声协议", glyph: "⚠", primary: "主干扰", primaryShort: "干扰", use: "塞入噪声牌、污染牌库与削弱对手" },
-  基础: { tone: "base", name: "基础", fullName: "基础协议", glyph: "◇", primary: "桥接", primaryShort: "桥接", use: "所有基础牌共享；只参与同调，不计入混合专家路由" },
 };
 
 const LEGACY_TAGS = {
@@ -83,6 +83,41 @@ const KEYWORD_TONES = {
   不可取回: "rose",
   反噬: "red",
 };
+
+const TUTORIAL_STEPS = [
+  {
+    eyebrow: "STEP 01 · CHOOSE",
+    title: "选择你的模型娘",
+    body: "每位角色拥有独立被动和专属牌。默认牌组由公共基础牌与角色专属牌共同组成，也可以进入牌组构筑自行替换。",
+    tips: ["左右按钮、圆点或直接点击角色卡都能切换角色。", "首次游玩建议先使用默认牌组。"],
+    glyph: "✦",
+    chips: ["角色", "18 张牌", "开始对决"],
+  },
+  {
+    eyebrow: "STEP 02 · DEPLOY",
+    title: "用 Token 布置五个槽位",
+    body: "每回合拥有 5 点 Token。把卡牌放进五个槽位，费用合计不能超过剩余 Token；槽位可以主动留空。",
+    tips: ["电脑端可拖动卡牌。", "手机端点牌后再点槽位，或按住卡牌向上拖入槽位。"],
+    glyph: "5",
+    chips: ["Token", "拖放入槽", "允许空槽"],
+  },
+  {
+    eyebrow: "STEP 03 · LINK",
+    title: "让相邻协议形成同调",
+    body: "相邻卡牌只要共享任意一种协议，就会形成连接。每条连接让该卡实际展示的攻击和抵挡分别 +1；空指针这类展示为 0 的项目也能被提升。",
+    tips: ["基础牌同时拥有基础协议，是最常用的连接桥。", "评估牌阵时留意卡牌上方的“数值 ↑”提示。"],
+    glyph: "⚡",
+    chips: ["基础", "计算", "安全", "视觉"],
+  },
+  {
+    eyebrow: "STEP 04 · RESOLVE",
+    title: "先预览，再确认结算",
+    body: "第一次确认会公开双方牌阵并收起手机端手牌。检查完毕后再确认结算，双方从第 1 槽开始逐位对位。",
+    tips: ["克劳德在揭示阶段还能发动一次决策修正。", "对位结算结束后进入下一回合，手牌区自动恢复。"],
+    glyph: "⇄",
+    chips: ["公开牌阵", "决策修正", "逐槽结算"],
+  },
+];
 
 const dom = {
   characterSelect: $("#characterSelect"),
@@ -156,6 +191,19 @@ const dom = {
   soundBtn: $("#soundBtn"),
   helpBtn: $("#helpBtn"),
   helpModal: $("#helpModal"),
+  tutorialSelectBtn: $("#tutorialSelectBtn"),
+  tutorialModal: $("#tutorialModal"),
+  tutorialEyebrow: $("#tutorialEyebrow"),
+  tutorialProgress: $("#tutorialProgress"),
+  tutorialStepNumber: $("#tutorialStepNumber"),
+  tutorialTitle: $("#tutorialTitle"),
+  tutorialBody: $("#tutorialBody"),
+  tutorialTips: $("#tutorialTips"),
+  tutorialVisual: $("#tutorialVisual"),
+  tutorialPrevBtn: $("#tutorialPrevBtn"),
+  tutorialNextBtn: $("#tutorialNextBtn"),
+  tutorialSkipBtn: $("#tutorialSkipBtn"),
+  closeTutorialBtn: $("#closeTutorialBtn"),
   protocolModal: $("#protocolModal"),
   protocolGrid: $("#protocolGrid"),
   protocolBtn: $("#protocolBtn"),
@@ -329,7 +377,10 @@ let handTouchDrag = null;
 let suppressTouchHandClick = false;
 let deckDraft = null;
 let deckBuilderDirty = false;
+let tutorialStep = 0;
+let tutorialAutoTimer = 0;
 const DECK_LIBRARY_KEY = "model-matrix-decks-v1";
+const TUTORIAL_KEY = "model-matrix-tutorial-v1";
 const autoRun = DEV.auto == null
   ? null
   : {
@@ -751,6 +802,60 @@ function showTriggerBanner({ glyph = "✦", title, detail, tone = "teal" }) {
     () => dom.triggerBanner.classList.remove("visible"),
     2600,
   );
+}
+
+function renderTutorialStep() {
+  const step = TUTORIAL_STEPS[tutorialStep];
+  if (!step) return;
+  dom.tutorialEyebrow.textContent = step.eyebrow;
+  dom.tutorialStepNumber.textContent =
+    `${tutorialStep + 1} / ${TUTORIAL_STEPS.length}`;
+  dom.tutorialProgress.innerHTML = TUTORIAL_STEPS
+    .map((_, index) =>
+      `<i class="${index === tutorialStep ? "active" : index < tutorialStep ? "done" : ""}"></i>`
+    )
+    .join("");
+  dom.tutorialTitle.textContent = step.title;
+  dom.tutorialBody.textContent = step.body;
+  dom.tutorialTips.innerHTML = step.tips
+    .map((tip) => `<span>${tip}</span>`)
+    .join("");
+  dom.tutorialVisual.innerHTML = `
+    <div class="tutorial-hero-glyph">${step.glyph}</div>
+    <div class="tutorial-chip-row">${step.chips
+      .map((chip) => `<span>${chip}</span>`)
+      .join("")}</div>
+    <div class="tutorial-orbit orbit-a"></div>
+    <div class="tutorial-orbit orbit-b"></div>
+  `;
+  dom.tutorialPrevBtn.disabled = tutorialStep === 0;
+  dom.tutorialNextBtn.textContent =
+    tutorialStep === TUTORIAL_STEPS.length - 1 ? "开始游戏" : "下一步";
+}
+
+function openTutorial() {
+  clearTimeout(tutorialAutoTimer);
+  tutorialStep = 0;
+  renderTutorialStep();
+  dom.tutorialModal.classList.remove("hidden");
+}
+
+function closeTutorial(markSeen = true) {
+  if (markSeen) writeStorage(TUTORIAL_KEY, "1");
+  dom.tutorialModal.classList.add("hidden");
+}
+
+function maybeShowTutorial() {
+  if (
+    autoRun ||
+    readStorage(TUTORIAL_KEY, "0") === "1" ||
+    dom.characterSelect.classList.contains("hidden")
+  ) {
+    return;
+  }
+  tutorialAutoTimer = setTimeout(() => {
+    if (!dom.characterSelect.classList.contains("hidden")) openTutorial();
+  }, 450);
 }
 
 function setNote(message) {
@@ -3777,6 +3882,21 @@ dom.changeBtn.addEventListener("click", showCharacterSelect);
 dom.menuBtn.addEventListener("click", showCharacterSelect);
 dom.helpBtn.addEventListener("click", () => dom.helpModal.classList.remove("hidden"));
 dom.helpSelectBtn.addEventListener("click", () => dom.helpModal.classList.remove("hidden"));
+dom.tutorialSelectBtn.addEventListener("click", openTutorial);
+dom.tutorialPrevBtn.addEventListener("click", () => {
+  tutorialStep = Math.max(0, tutorialStep - 1);
+  renderTutorialStep();
+});
+dom.tutorialNextBtn.addEventListener("click", () => {
+  if (tutorialStep >= TUTORIAL_STEPS.length - 1) {
+    closeTutorial();
+    return;
+  }
+  tutorialStep += 1;
+  renderTutorialStep();
+});
+dom.tutorialSkipBtn.addEventListener("click", () => closeTutorial());
+dom.closeTutorialBtn.addEventListener("click", () => closeTutorial());
 dom.protocolBtn.addEventListener("click", openProtocolCodex);
 dom.protocolSelectBtn.addEventListener("click", openProtocolCodex);
 dom.closeProtocolBtn.addEventListener("click", () => dom.protocolModal.classList.add("hidden"));
@@ -4072,6 +4192,26 @@ dom.slots.addEventListener("click", (event) => {
 
 window.addEventListener("keydown", (event) => {
   if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+  if (!dom.tutorialModal.classList.contains("hidden")) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeTutorial();
+    } else if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      tutorialStep = Math.max(0, tutorialStep - 1);
+      renderTutorialStep();
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      if (tutorialStep < TUTORIAL_STEPS.length - 1) {
+        tutorialStep += 1;
+        renderTutorialStep();
+      }
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      dom.tutorialNextBtn.click();
+    }
+    return;
+  }
   if (!dom.deckBuilderModal.classList.contains("hidden")) {
     if (event.key === "Escape") {
       event.preventDefault();
@@ -4166,6 +4306,7 @@ document.addEventListener("visibilitychange", () => {
 updateMobileViewportState();
 renderCharacterSelect();
 renderModeSelect();
+maybeShowTutorial();
 if (autoRun) {
   installAutoInputGuard();
   void runAutoSession();
