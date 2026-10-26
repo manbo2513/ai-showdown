@@ -5094,17 +5094,15 @@ kbd {
   }
 }
 
-@media (max-width: 900px) and (orientation: portrait) {
-  body.battle-active .orientation-hint {
-    display: grid;
-  }
-
-  body.battle-active .app {
-    display: none;
-  }
+body.battle-active.mobile-portrait .orientation-hint {
+  display: grid;
 }
 
-@media (max-width: 900px) and (orientation: landscape) and (max-height: 500px) {
+body.battle-active.mobile-portrait .app {
+  display: none;
+}
+
+@media (max-width: 1100px) and (max-height: 600px) {
   html,
   body {
     height: 100%;

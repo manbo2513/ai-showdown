@@ -198,6 +198,26 @@ const dom = {
   toast: $("#toast"),
 };
 
+function updateMobileViewportState() {
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  const coarsePointer =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(pointer: coarse)").matches;
+  const compactViewport = Math.min(width, height) <= 700;
+  const mobileLayout = coarsePointer || compactViewport;
+  const portrait = height >= width;
+  document.body.classList.toggle("mobile-layout", mobileLayout);
+  document.body.classList.toggle("mobile-portrait", mobileLayout && portrait);
+  document.body.classList.toggle("mobile-landscape", mobileLayout && !portrait);
+}
+
+function scheduleMobileViewportUpdate() {
+  requestAnimationFrame(updateMobileViewportState);
+  setTimeout(updateMobileViewportState, 120);
+  setTimeout(updateMobileViewportState, 420);
+}
+
 class SoundEngine {
   constructor() {
     this.context = null;
@@ -3982,6 +4002,13 @@ window.addEventListener("keydown", (event) => {
   }
 });
 
+window.addEventListener("resize", scheduleMobileViewportUpdate, { passive: true });
+window.addEventListener("orientationchange", scheduleMobileViewportUpdate);
+window.screen?.orientation?.addEventListener?.("change", scheduleMobileViewportUpdate);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) scheduleMobileViewportUpdate();
+});
+updateMobileViewportState();
 renderCharacterSelect();
 renderModeSelect();
 if (autoRun) {
