@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f7edf3" />
+    <meta
+      name="description"
+      content="AI决战：选择 AI 模型娘，把能力牌拖入五个槽位，与对手展开 Token 协议对决。"
+    />
+    <title>AI决战 · AI Showdown</title>
+    <link rel="icon" href="assets/dafeiyu.jpg" type="image/jpeg" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="candy-sky" aria-hidden="true">
+      <span class="cloud cloud-a"></span>
+      <span class="cloud cloud-b"></span>
+      <span class="cloud cloud-c"></span>
+      <span class="sparkle sparkle-a">✦</span>
+      <span class="sparkle sparkle-b">✧</span>
+      <span class="sparkle sparkle-c">✦</span>
+      <span class="floating-card floating-card-a"></span>
+      <span class="floating-card floating-card-b"></span>
+    </div>
+
+    <div id="orientationHint" class="orientation-hint" role="status" aria-live="polite">
+      <div class="orientation-device" aria-hidden="true"><span>↻</span></div>
+      <strong>请横屏游玩</strong>
+      <p>五组对位需要横向空间。旋转设备后即可继续排兵与结算。</p>
+    </div>
+
+    <div id="app" class="app">
+      <header class="game-header">
+        <div class="logo">
+          <span class="logo-symbol">✦</span>
+          <div>
+            <strong>AI决战</strong>
+            <small>AI SHOWDOWN</small>
+          </div>
+        </div>
+        <div class="round-stamp">
+          <span>TURN</span>
+          <b id="roundValue">01</b>
+          <i id="modeLabel">随机对战</i>
+        </div>
+        <div class="header-actions">
+          <button id="soundBtn" class="circle-button" type="button" aria-label="切换音效">♪</button>
+          <button id="helpBtn" class="circle-button" type="button" aria-label="打开玩法说明">?</button>
+          <button id="protocolBtn" class="round-button protocol-header-button" type="button" aria-label="打开协议图鉴">协议</button>
+          <button id="menuBtn" class="round-button" type="button">模型选择</button>
+        </div>
+      </header>
+
+      <main class="battle-shell">
+        <aside class="fighter-panel player-panel">
+          <div class="fighter-name-row">
+            <span class="player-tag">YOU</span>
+            <h2 id="playerName">大肥鱼</h2>
+          </div>
+          <div class="portrait-frame player-portrait">
+            <span class="portrait-spark p1">✦</span>
+            <span class="portrait-spark p2">✧</span>
+            <img id="playerPortrait" src="assets/dafeiyu.jpg" alt="大肥鱼 Q 版模型娘拟人立绘" />
+          </div>
+          <div class="hp-block">
+            <div class="hp-copy"><span>稳定度</span><b id="playerHpText">48 / 48</b></div>
+            <div class="hp-track"><div id="playerHpFill" class="hp-fill player-hp"></div></div>
+          </div>
+          <div class="passive-card">
+            <span class="passive-icon" id="playerPassiveIcon">♫</span>
+            <div>
+              <b id="playerPassiveName">白饭补给</b>
+              <p id="playerPassiveText">形成同调时恢复 1 点稳定度。</p>
+            </div>
+          </div>
+          <div id="playerBuffs" class="buff-row" aria-live="polite"></div>
+          <div class="deck-mini">
+            <button id="drawPileBtn" class="deck-button" type="button" aria-label="查看抽牌堆"><span class="deck-label-full">抽牌堆</span><span class="deck-label-short">抽</span> <b id="drawCount">11</b></button>
+            <button id="discardPileBtn" class="deck-button" type="button" aria-label="查看弃牌堆"><span class="deck-label-full">弃牌堆</span><span class="deck-label-short">弃</span> <b id="discardCount">0</b></button>
+            <button id="exhaustPileBtn" class="deck-button" type="button" aria-label="查看消耗堆"><span class="deck-label-full">消耗堆</span><span class="deck-label-short">消</span> <b id="exhaustCount">0</b></button>
+          </div>
+        </aside>
+
+        <section class="duel-field">
+          <div class="energy-row">
+            <div class="energy-summary">
+              <div class="energy-number"><b id="energyValue">5</b><span>/ 5</span></div>
+              <div>
+                <span class="field-label">可用 Token</span>
+                <div id="energyPips" class="energy-pips"></div>
+              </div>
+            </div>
+            <div class="turn-note" id="turnNote">把卡牌拖入下方 5 个槽位</div>
+            <button id="autoPlaceBtn" class="mini-action" type="button">一键布阵</button>
+          </div>
+
+          <div id="slots" class="slots" aria-label="五组对位槽"></div>
+
+          <div class="resolve-strip">
+            <span id="phaseText">排兵阶段</span>
+            <div class="resolve-track"><i id="resolveFill"></i></div>
+            <span id="slotsUsed">已放置 0 / 5</span>
+          </div>
+        </section>
+
+        <aside class="fighter-panel enemy-panel">
+          <div class="fighter-name-row">
+            <span class="enemy-tag">RIVAL</span>
+            <h2 id="enemyName">HALLU</h2>
+          </div>
+          <div class="portrait-frame enemy-portrait">
+            <span class="portrait-spark p1">✦</span>
+            <span class="portrait-spark p2">✧</span>
+            <img id="enemyPortrait" src="assets/merlot.svg" alt="HALLU Q 版拟人立绘" />
+          </div>
+          <div class="hp-block">
+            <div class="hp-copy"><span>稳定度</span><b id="enemyHpText">46 / 46</b></div>
+            <div class="hp-track"><div id="enemyHpFill" class="hp-fill enemy-hp"></div></div>
+          </div>
+          <div class="passive-card enemy-passive">
+            <span class="passive-icon" id="enemyPassiveIcon">♛</span>
+            <div>
+              <b id="enemyPassiveName">幻觉增殖</b>
+              <p id="enemyPassiveText">每回合第 3 槽的攻击牌额外造成 2 点伤害。</p>
+            </div>
+          </div>
+          <div class="enemy-energy" aria-label="对手 Token">
+            <span>Token</span>
+            <div id="enemyEnergyPips"></div>
+          </div>
+        </aside>
+      </main>
+
+      <section class="hand-area">
+        <div class="hand-heading">
+          <div>
+            <span class="eyebrow">MODEL DECK</span>
+            <h2>手牌</h2>
+          </div>
+          <div class="hand-help">
+            <b>同调只看右上角协议</b>
+            <span>⚙ 计算＝⚙ 计算，相邻才连携</span>
+            <span>拖动出牌 / 点牌再点槽位</span>
+          </div>
+        </div>
+        <div id="hand" class="hand"></div>
+        <div class="battle-actions">
+          <div id="selectionHint" class="selection-hint">选一张牌，开始排兵</div>
+          <button id="swapBtn" class="swap-action hidden" type="button">
+            <span>⇄</span>
+            <div>
+              <b>决策修正</b>
+              <small>交换两张已放置的牌</small>
+            </div>
+          </button>
+          <button id="confirmBtn" class="primary-button" type="button">
+            <span>确认布阵</span>
+            <small>ENTER</small>
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <div id="characterSelect" class="screen character-select">
+      <div class="select-inner">
+        <header class="title-lockup">
+          <div class="title-decoration">✦ · ✧ · ✦</div>
+          <h1>AI决战</h1>
+          <p class="title-en">AI SHOWDOWN</p>
+          <p class="title-lead">选择你的模型娘，用 5 个 Token 排出一场能力协议战。</p>
+          <div id="modeSelect" class="mode-select" role="group" aria-label="选择游戏模式">
+            <button class="mode-choice active" type="button" data-mode="versus">
+              <strong>随机对战</strong>
+              <span>匹配随机模型娘</span>
+            </button>
+            <button class="mode-choice" type="button" data-mode="boss">
+              <strong>Boss 挑战</strong>
+              <span>挑战强化 HALLU</span>
+            </button>
+          </div>
+          <p id="modeDescription" class="mode-description">对战模式会从上场模型之外随机选择对手。</p>
+          <div class="title-tools">
+            <button id="helpSelectBtn" class="protocol-link" type="button">玩法说明</button>
+            <button id="protocolSelectBtn" class="protocol-link" type="button">协议图鉴</button>
+          </div>
+        </header>
+
+        <div class="character-carousel">
+          <button id="characterPrevBtn" class="carousel-arrow prev" type="button" aria-label="查看上一组角色">‹</button>
+          <div id="characterViewport" class="character-viewport">
+            <div id="characterGrid" class="character-grid"></div>
+          </div>
+          <button id="characterNextBtn" class="carousel-arrow next" type="button" aria-label="查看下一组角色">›</button>
+        </div>
+        <div id="characterDots" class="carousel-dots" aria-label="角色轮播位置"></div>
+
+        <section class="selected-character">
+          <div class="selected-copy">
+            <span class="eyebrow">SELECTED MODEL</span>
+            <h2><span id="selectedName">大肥鱼</span><small id="selectedTitle">白饭推理型</small></h2>
+            <div class="selected-passive">
+              <span id="selectedPassiveIcon">🍚</span>
+              <div><b id="selectedPassiveName">白饭补给</b><p id="selectedPassiveText"></p></div>
+            </div>
+          </div>
+          <div class="deck-preview">
+            <span>当前牌组 · <b id="activeDeckName">默认卡组</b></span>
+            <div id="deckChips" class="deck-chips"></div>
+          </div>
+          <div class="selected-actions">
+            <button id="deckBuilderBtn" class="deck-builder-button" type="button">
+              <span>牌组构筑</span>
+            </button>
+            <button id="startBtn" class="primary-button start-button" type="button">
+              <span>开始对决</span>
+              <small>进入牌阵</small>
+            </button>
+          </div>
+        </section>
+        <p id="deckFootnote" class="select-footnote">非官方 AI 模型拟人企划 · 基础牌 10 张 + 模型专属牌 8 张 · 每回合抽 5 张 · 五槽对位</p>
+      </div>
+    </div>
+
+    <div id="deckBuilderModal" class="modal-layer hidden">
+      <div class="modal-card deck-builder-card">
+        <button id="closeDeckBuilderBtn" class="modal-close" type="button" aria-label="关闭">×</button>
+        <div class="deck-builder-heading">
+          <div>
+            <div class="eyebrow">DECK WORKSHOP</div>
+            <h2><span id="deckBuilderCharacter">大肥鱼</span> · 牌组构筑</h2>
+            <p id="deckBuilderRuleNote">18张 / 基础牌至少8张 / 专属牌至少6张 / 单卡最多3张</p>
+          </div>
+          <div class="deck-save-tabs" id="deckSaveTabs" aria-label="牌组存档槽位"></div>
+        </div>
+        <div class="deck-builder-toolbar">
+          <label>
+            <span>牌组名称</span>
+            <input id="deckNameInput" type="text" maxlength="20" autocomplete="off" />
+          </label>
+          <div class="deck-count-summary">
+            <div><span>总张数</span><b id="deckTotalCount">0 / 18</b></div>
+            <div><span>基础牌</span><b id="deckBaseCount">0 / 8+</b></div>
+            <div><span>专属牌</span><b id="deckExclusiveCount">0 / 6+</b></div>
+          </div>
+        </div>
+        <div id="deckValidation" class="deck-validation" role="status" aria-live="polite"></div>
+        <div id="deckCardPool" class="deck-card-pool"></div>
+        <div class="deck-builder-actions">
+          <button id="clearDeckDraftBtn" class="round-button deck-clear-button" type="button">一键清空</button>
+          <button id="resetDeckDraftBtn" class="round-button" type="button">载入默认</button>
+          <button id="saveDeckBtn" class="primary-button" type="button">保存并使用</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="protocolModal" class="modal-layer hidden">
+      <div class="modal-card protocol-card">
+        <button id="closeProtocolBtn" class="modal-close" type="button" aria-label="关闭">×</button>
+        <div class="eyebrow">PROTOCOL ATLAS</div>
+        <h2>能力协议图鉴</h2>
+        <p class="protocol-lead">
+          同调只看卡牌右上角的协议标识。相邻槽位只要共享任意一种协议，我方卡牌就会连携；基础牌同时拥有原生协议与基础协议。
+        </p>
+        <div id="protocolGrid" class="protocol-grid"></div>
+      </div>
+    </div>
+
+    <div id="helpModal" class="modal-layer hidden">
+      <div class="modal-card help-card">
+        <button id="closeHelpBtn" class="modal-close" type="button" aria-label="关闭">×</button>
+        <div class="eyebrow">HOW TO PLAY</div>
+        <h2>规则与词条</h2>
+        <div class="rules-list">
+          <div><span>01</span><p><b>抽牌</b>每回合开始固定抽 5 张。回合结束时，槽位牌与本回合未使用的手牌都会进入弃牌堆；抽牌堆耗尽后自动洗回。</p></div>
+          <div><span>02</span><p><b>排兵</b>每回合拥有 5 点 Token，把能力牌拖进 1–5 号槽。槽位可以空着，也可以先点牌再点槽位。</p></div>
+          <div><span>03</span><p><b>对位</b>第一次确认只公开双方牌阵；查看后再次点击“确认结算”，双方才从一号槽依次对决。攻击先被对位护盾抵消，多余数值才造成伤害。</p></div>
+          <div><span>04</span><p><b>同调</b>相邻牌只要共享任意一种协议即可连携。基础牌同时拥有原生协议和基础协议；基础只负责桥接，不参与 GPT 的混编统计。</p></div>
+          <div><span>05</span><p><b>牌堆</b>普通牌进入弃牌堆；消耗牌和未使用的虚无牌进入独立消耗堆，不参与洗牌。点击左上角三个牌堆按钮可查看全部内容。</p></div>
+        </div>
+        <section class="keyword-codex" aria-labelledby="keywordCodexTitle">
+          <div class="eyebrow">KEYWORD CODEX</div>
+          <h3 id="keywordCodexTitle">词条解释</h3>
+          <div class="keyword-grid">
+            <article><b>消耗</b><p>牌离场后进入独立的消耗堆，本局不再洗回抽牌堆。</p></article>
+            <article><b>虚无</b><p>回合结束时仍然留在手牌中，就进入消耗堆；打出后按普通牌规则处理。</p></article>
+            <article><b>消逝</b><p>放置时立即结算效果，不占槽位、不可取回，随后进入消耗堆；已包含消耗效果，不再重复显示消耗。</p></article>
+            <article><b>保留</b><p>回合结束时不会进入弃牌堆，而是继续留在手牌中。</p></article>
+            <article><b>不可取回</b><p>放入槽位后不能取回，也不能被其他牌替换。</p></article>
+            <article><b>固有</b><p>战斗开始时置于抽牌堆顶，必定进入首回合起手。</p></article>
+            <article><b>反噬</b><p>带有反噬的牌若在回合结束时仍在手牌中，会按数值损失稳定度。</p></article>
+            <article><b>滑溜</b><p>布阵阶段从抽牌堆抽到时，自动进入最左侧空槽并立即结算；没有空槽时留在手牌中。</p></article>
+            <article><b>多段攻击</b><p>先计算单段最终攻击，再乘以攻击次数，最后只扣除一次对位抵挡。</p></article>
+            <article><b>同调</b><p>相邻卡牌共享任意一种协议即可连携；每有一条有效连接，当前牌数值提高。</p></article>
+          </div>
+        </section>
+        <div class="button-note"><kbd>Space</kbd> / <kbd>Enter</kbd> 确认布阵　·　<kbd>1</kbd>–<kbd>5</kbd> 快速放入对应槽位</div>
+        <button id="helpDoneBtn" class="primary-button" type="button">知道啦</button>
+      </div>
+    </div>
+
+    <div id="resultModal" class="modal-layer hidden">
+      <div id="resultCard" class="modal-card result-card">
+        <div id="resultMascot" class="result-mascot">✦</div>
+        <div class="eyebrow" id="resultEyebrow">MODEL ALIGNED</div>
+        <h2 id="resultTitle">对齐全绿！</h2>
+        <p id="resultCopy">你的牌阵把对手的算盘打乱了。</p>
+        <div class="result-stats">
+          <div><span>回合</span><b id="resultRounds">0</b></div>
+          <div><span>削减稳定度</span><b id="resultDamage">0</b></div>
+          <div><span>同调次数</span><b id="resultLinks">0</b></div>
+        </div>
+        <p id="resultBest" class="result-best">最佳纪录：暂无</p>
+        <button id="againBtn" class="primary-button" type="button">再排一局</button>
+        <button id="changeBtn" class="round-button wide" type="button">更换模型</button>
+      </div>
+    </div>
+
+    <div id="pileModal" class="modal-layer hidden">
+      <div class="modal-card pile-card">
+        <button id="closePileBtn" class="modal-close" type="button" aria-label="关闭">×</button>
+        <div class="eyebrow">CARD LIBRARY</div>
+        <h2 id="pileTitle">抽牌堆</h2>
+        <div class="pile-tabs">
+          <button id="pileDeckTab" class="pile-tab active" type="button">
+            抽牌堆 <b id="modalDeckCount">0</b>
+          </button>
+          <button id="pileDiscardTab" class="pile-tab" type="button">
+            弃牌堆 <b id="modalDiscardCount">0</b>
+          </button>
+          <button id="pileExhaustTab" class="pile-tab" type="button">
+            消耗堆 <b id="modalExhaustCount">0</b>
+          </button>
+        </div>
+        <p id="pileNote" class="pile-note">按当前牌堆顺序展示，最上方为下一张会抽到的牌。</p>
+        <div id="pileList" class="pile-list"></div>
+      </div>
+    </div>
+
+    <div id="cardModal" class="modal-layer hidden">
+      <div class="modal-card card-detail-card">
+        <button id="closeCardBtn" class="modal-close" type="button" aria-label="关闭">×</button>
+        <div class="eyebrow" id="cardModalEyebrow">CARD DETAIL</div>
+        <h2 id="cardModalTitle">卡牌详情</h2>
+        <div id="cardModalBody" class="card-modal-body"></div>
+        <div id="cardModalActions" class="card-modal-actions"></div>
+      </div>
+    </div>
+
+    <div id="triggerBanner" class="trigger-banner" data-tone="teal" role="status" aria-live="polite"></div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="game.js"></script>
+  </body>
+</html>
