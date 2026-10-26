@@ -25,6 +25,8 @@
 
 html {
   min-width: 320px;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -1691,6 +1693,49 @@ button:focus-visible,
 
 .hand-card.dragging {
   opacity: 0.36;
+}
+
+.hand-card.touch-dragging {
+  opacity: 0.35;
+  transform: scale(0.96);
+}
+
+.touch-drag-ghost {
+  position: fixed;
+  z-index: 650;
+  display: flex;
+  width: 138px;
+  min-height: 54px;
+  padding: 9px 12px;
+  pointer-events: none;
+  flex-direction: column;
+  justify-content: center;
+  border: 1px solid rgba(229, 174, 72, 0.58);
+  border-radius: 14px;
+  color: #5d4324;
+  background: rgba(255, 247, 218, 0.96);
+  box-shadow: 0 14px 30px rgba(82, 55, 96, 0.24);
+  transform: translate(-50%, -55%) rotate(-2deg);
+}
+
+.touch-drag-ghost b {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.touch-drag-ghost small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.duel-slot.touch-drop-target {
+  border-color: rgba(223, 166, 61, 0.8);
+  box-shadow:
+    0 0 0 3px rgba(235, 181, 72, 0.16),
+    0 13px 26px rgba(92, 62, 105, 0.13);
 }
 
 .hand-card::before {
@@ -5418,6 +5463,62 @@ body.battle-active.mobile-portrait .app {
     padding: 4px;
   }
 
+  body.battle-active .duel-slot:not(.planning-slot) {
+    grid-template-rows: minmax(0, 1fr) 12px minmax(0, 1fr) 14px;
+  }
+
+  body.battle-active .duel-slot:not(.planning-slot) .mini-card {
+    display: flex;
+    width: min(88px, 100%);
+    height: 100%;
+    padding: 2px 3px;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  body.battle-active .duel-slot:not(.planning-slot) .mini-card-top {
+    min-height: 15px;
+    gap: 2px;
+  }
+
+  body.battle-active .duel-slot:not(.planning-slot) .mini-cost {
+    width: 15px;
+    height: 15px;
+    font-size: 9px;
+  }
+
+  body.battle-active .duel-slot:not(.planning-slot) .mini-card .tag-badge {
+    min-height: 13px;
+    padding: 0 2px;
+    gap: 1px;
+    font-size: 9px;
+  }
+
+  body.battle-active .duel-slot:not(.planning-slot) .mini-card .tag-badge i {
+    display: none;
+  }
+
+  body.battle-active .duel-slot:not(.planning-slot) .mini-card-name,
+  body.battle-active .duel-slot:not(.planning-slot) .mini-card.long-name .mini-card-name {
+    min-height: 0;
+    overflow: hidden;
+    font-size: 9.5px;
+    line-height: 1.05;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.battle-active .duel-slot:not(.planning-slot) .mini-stats {
+    margin-top: 0;
+    gap: 3px;
+    font-size: 9px;
+    line-height: 1;
+  }
+
+  body.battle-active .duel-slot:not(.planning-slot) .mini-icon {
+    display: none;
+  }
+
   body.battle-active .mini-icon {
     height: 16px;
     font-size: 15px;
@@ -5507,6 +5608,7 @@ body.battle-active.mobile-portrait .app {
     max-width: none;
     height: 106px;
     padding: 5px 6px;
+    touch-action: pan-x;
   }
 
   body.battle-active .card-top {
@@ -5518,8 +5620,12 @@ body.battle-active.mobile-portrait .app {
   }
 
   body.battle-active .card-name {
-    margin-top: 2px;
-    font-size: 13px;
+    overflow: hidden;
+    margin-top: 1px;
+    font-size: 12px;
+    line-height: 1.1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   body.battle-active .card-role,
@@ -5533,14 +5639,14 @@ body.battle-active.mobile-portrait .app {
 
   body.battle-active .card-desc {
     min-height: 0;
-    margin: 2px 0;
+    margin: 1px 0;
     flex: 1;
     font-size: 12px;
-    line-height: 1.25;
+    line-height: 1.18;
   }
 
   body.battle-active .card-desc .card-effect-text {
-    max-height: 34px;
+    max-height: 24px;
     overflow: hidden;
   }
 
@@ -5573,6 +5679,48 @@ body.battle-active.mobile-portrait .app {
   body.battle-active .swap-action {
     width: 36px;
     padding: 0;
+  }
+
+  body.battle-active.combat-focus .app {
+    grid-template-rows: 34px minmax(0, 1fr) 46px;
+  }
+
+  body.battle-active.combat-focus .hand-area {
+    display: block;
+    padding-top: 2px;
+  }
+
+  body.battle-active.combat-focus .hand-heading,
+  body.battle-active.combat-focus .hand {
+    display: none;
+  }
+
+  body.battle-active.combat-focus .battle-actions {
+    width: 100%;
+    min-height: 42px;
+    height: 42px;
+    padding: 3px 0 0;
+  }
+
+  body.battle-active.combat-focus .energy-row {
+    min-height: 26px;
+  }
+
+  body.battle-active.combat-focus .energy-summary {
+    min-height: 24px;
+  }
+
+  body.battle-active.combat-focus .mini-action {
+    display: none;
+  }
+
+  body.battle-active.combat-focus .slots {
+    height: calc(100% - 46px);
+  }
+
+  body.battle-active.combat-focus .portrait-frame {
+    width: 58px;
+    height: 58px;
   }
 
   .character-select {

@@ -325,6 +325,8 @@ let cardModalSlot = -1;
 let carouselIndex = 0;
 let carouselDrag = null;
 let suppressCarouselClick = false;
+let handTouchDrag = null;
+let suppressTouchHandClick = false;
 let deckDraft = null;
 let deckBuilderDirty = false;
 const DECK_LIBRARY_KEY = "model-matrix-decks-v1";
@@ -1131,6 +1133,7 @@ function normalizeCarouselIndex() {
 
 function startMatch() {
   matchSequence += 1;
+  document.body.classList.remove("combat-focus");
   clearTimeout(triggerBannerTimer);
   dom.triggerBanner.classList.remove("visible");
   clearTimeout(handOverflowToastTimer);
@@ -1242,6 +1245,7 @@ function startMatch() {
 
 function showCharacterSelect() {
   if (state) state.phase = "select";
+  document.body.classList.remove("combat-focus");
   clearTimeout(triggerBannerTimer);
   dom.triggerBanner.classList.remove("visible");
   document.body.classList.remove("battle-active");
@@ -3389,35 +3393,52 @@ function renderHand() {
     .join("");
 
   const selected = selectedCard();
+  const mobileLayout = document.body.classList.contains("mobile-layout");
   if (state.phase !== "plan") {
+    let phaseHint;
+    if (state.enemyThinking) {
+      phaseHint = "克劳德正在审视并修改牌阵 · 决策完成前无法结算";
+    } else if (state.phase === "preview") {
+      if (state.player.character.id === "momo") {
+        phaseHint = state.player.swapUsed
+          ? "决策修正已使用 · 检查牌阵后确认结算"
+          : state.player.swapMode
+            ? state.player.swapFirst >= 0
+              ? `已选择第 ${state.player.swapFirst + 1} 槽 · 请选择第二张已放置的牌`
+              : "决策修正：请选择第一张已放置的我方卡牌"
+            : "牌阵已公开 · 可以使用右侧“决策修正”交换两张牌";
+      } else if (state.player.character.id === "ruka") {
+        phaseHint = `混合专家路由已结算：全体攻击与抵挡 ${
+          protocolSpreadModifier() >= 0 ? "+" : ""
+        }${protocolSpreadModifier()}`;
+      } else {
+        phaseHint = "双方牌阵已公开 · 查看同调与牌堆后点击“确认结算”";
+      }
+    } else if (state.phase === "resolve") {
+      phaseHint = "双方正在逐位对决…";
+    } else {
+      phaseHint = "本局对决结束";
+    }
     dom.selectionHint.textContent =
-      state.enemyThinking
-        ? "克劳德正在审视并修改牌阵 · 决策完成前无法结算"
-        : state.phase === "preview"
-        ? state.player.character.id === "momo"
-          ? state.player.swapUsed
-            ? "决策修正已使用 · 检查牌阵后确认结算"
-            : state.player.swapMode
-              ? state.player.swapFirst >= 0
-                ? `已选择第 ${state.player.swapFirst + 1} 槽 · 请选择第二张已放置的牌`
-                : "决策修正：请选择第一张已放置的我方卡牌"
-              : "牌阵已公开 · 可以使用右侧“决策修正”交换两张牌"
-          : state.player.character.id === "ruka"
-            ? `混合专家路由已结算：全体攻击与抵挡 ${
-                protocolSpreadModifier() >= 0 ? "+" : ""
-              }${protocolSpreadModifier()}`
-          : "双方牌阵已公开 · 查看同调与牌堆后点击“确认结算”"
-        : state.phase === "resolve"
-          ? "双方正在逐位对决…"
-          : "本局对决结束";
+      mobileLayout && ["preview", "resolve"].includes(state.phase)
+        ? `手牌已收起 · ${phaseHint}`
+        : phaseHint;
   } else if (selected) {
-    dom.selectionHint.textContent = `已选择「${selected.name}」 · 点击任意槽位放入 · 再次点击已放牌可取回`;
+    dom.selectionHint.textContent = mobileLayout
+      ? `已选择「${selected.name}」 · 点击槽位，或按住拖入槽位`
+      : `已选择「${selected.name}」 · 点击任意槽位放入 · 再次点击已放牌可取回`;
   } else {
-    dom.selectionHint.textContent = `剩余 ${Math.max(0, remaining)} Token · 未放置的牌会在结算后进入弃牌堆`;
+    dom.selectionHint.textContent = mobileLayout
+      ? `剩余 ${Math.max(0, remaining)} Token · 点牌后点槽，或按住卡牌拖入槽位`
+      : `剩余 ${Math.max(0, remaining)} Token · 未放置的牌会在结算后进入弃牌堆`;
   }
 }
 
 function renderPhase() {
+  document.body.classList.toggle(
+    "combat-focus",
+    state.phase === "preview" || state.phase === "resolve",
+  );
   const filled = state.player.placements.filter(Boolean).length;
   if (state.phase === "plan") {
     dom.phaseText.textContent = "排兵阶段";
@@ -3833,7 +3854,112 @@ dom.soundBtn.addEventListener("click", () => {
 
 dom.landscapeLockBtn?.addEventListener("click", requestLandscapeMode);
 
+function clearTouchHandDrag({ keepSelection = false } = {}) {
+  if (!handTouchDrag) return;
+  handTouchDrag.ghost?.remove();
+  handTouchDrag.cardNode?.classList.remove("touch-dragging");
+  $$(".duel-slot").forEach((slot) => {
+    slot.classList.remove("drop-ready", "touch-drop-target");
+  });
+  if (!keepSelection) suppressTouchHandClick = handTouchDrag.dragging;
+  handTouchDrag = null;
+}
+
+dom.hand.addEventListener("pointerdown", (event) => {
+  if (
+    (event.pointerType === "mouse" &&
+      !document.body.classList.contains("mobile-layout")) ||
+    !state ||
+    state.phase !== "plan" ||
+    state.lock
+  ) {
+    return;
+  }
+  const cardNode = event.target.closest("[data-uid]");
+  if (!cardNode) return;
+  handTouchDrag = {
+    pointerId: event.pointerId,
+    cardNode,
+    uid: cardNode.dataset.uid,
+    startX: event.clientX,
+    startY: event.clientY,
+    dragging: false,
+    hoverSlot: -1,
+    ghost: null,
+  };
+});
+
+dom.hand.addEventListener("pointermove", (event) => {
+  const drag = handTouchDrag;
+  if (!drag || drag.pointerId !== event.pointerId) return;
+  const deltaX = event.clientX - drag.startX;
+  const deltaY = event.clientY - drag.startY;
+  if (!drag.dragging) {
+    if (Math.abs(deltaY) < 9 || Math.abs(deltaY) <= Math.abs(deltaX)) return;
+    const card = state?.player.hand.find((entry) => entry.uid === drag.uid);
+    if (!card) {
+      clearTouchHandDrag();
+      return;
+    }
+    drag.dragging = true;
+    suppressTouchHandClick = true;
+    state.selectedUid = drag.uid;
+    drag.cardNode.classList.add("touch-dragging");
+    try {
+      drag.cardNode.setPointerCapture?.(event.pointerId);
+    } catch {
+      // Synthetic and older pointer implementations may not support capture.
+    }
+    drag.ghost = document.createElement("div");
+    drag.ghost.className = "touch-drag-ghost";
+    drag.ghost.dataset.tone = card.tone;
+    drag.ghost.innerHTML = `<b>${card.name}</b><small>${effectiveCardCost(card)} Token</small>`;
+    document.body.appendChild(drag.ghost);
+    $$(".duel-slot").forEach((slot) => slot.classList.add("drop-ready"));
+  }
+
+  event.preventDefault();
+  drag.ghost.style.left = `${event.clientX}px`;
+  drag.ghost.style.top = `${event.clientY}px`;
+  const slot = document
+    .elementFromPoint(event.clientX, event.clientY)
+    ?.closest("[data-slot]");
+  const slotIndex = slot ? Number(slot.dataset.slot) : -1;
+  if (slotIndex !== drag.hoverSlot) {
+    drag.hoverSlot = slotIndex;
+    $$(".duel-slot").forEach((node) => {
+      node.classList.toggle(
+        "touch-drop-target",
+        Number(node.dataset.slot) === slotIndex,
+      );
+    });
+  }
+}, { passive: false });
+
+window.addEventListener("pointerup", (event) => {
+  const drag = handTouchDrag;
+  if (!drag || drag.pointerId !== event.pointerId) return;
+  const { dragging, hoverSlot, uid } = drag;
+  clearTouchHandDrag({ keepSelection: true });
+  if (!dragging) return;
+  event.preventDefault();
+  if (hoverSlot >= 0) {
+    placeSelectedCard(hoverSlot, uid);
+  } else {
+    state.selectedUid = uid;
+    renderAll();
+  }
+}, { passive: false });
+
+window.addEventListener("pointercancel", (event) => {
+  if (handTouchDrag?.pointerId === event.pointerId) clearTouchHandDrag();
+});
+
 dom.hand.addEventListener("click", (event) => {
+  if (suppressTouchHandClick) {
+    suppressTouchHandClick = false;
+    return;
+  }
   const cardNode = event.target.closest("[data-uid]");
   if (!cardNode || state?.phase !== "plan" || state?.lock) return;
   const card = state.player.hand.find((entry) => entry.uid === cardNode.dataset.uid);
