@@ -5180,6 +5180,44 @@ body.battle-active.mobile-portrait .app {
     overflow: hidden;
   }
 
+  #cardModal {
+    place-items: start center;
+    padding:
+      max(6px, env(safe-area-inset-top))
+      max(8px, env(safe-area-inset-right))
+      max(6px, env(safe-area-inset-bottom))
+      max(8px, env(safe-area-inset-left));
+    overflow: hidden;
+  }
+
+  #cardModal .card-detail-card {
+    display: flex;
+    width: min(720px, 100%);
+    max-height: calc(100dvh - 12px);
+    padding: 15px 17px 12px;
+    overflow: hidden;
+    flex-direction: column;
+  }
+
+  #cardModal .modal-close {
+    top: 8px;
+    right: 8px;
+    width: 32px;
+    height: 32px;
+  }
+
+  #cardModal .card-modal-body {
+    min-height: 0;
+    padding-right: 4px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  #cardModal .card-modal-actions {
+    flex: 0 0 auto;
+    padding-top: 8px;
+  }
+
   body.battle-active .app {
     display: grid;
     width: 100%;
